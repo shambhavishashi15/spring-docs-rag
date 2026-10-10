@@ -13,10 +13,11 @@ Guidance for Claude Code when working in this repository.
 - **Never make large changes without asking first.** Propose the plan, wait for my go-ahead, then implement.
 - Prefer idiomatic, conventional Spring code over clever code. No unnecessary abstractions or dependencies.
 - Stay within the current milestone. Don't jump ahead.
+- After each completed step, tell me how to test it, then commit with a clear message and push to main after I approve.
 
 ## Stack
 
-- **Java** + **Spring Boot 3.x** (latest stable), built with **Maven**.
+- **Java 21** + the **latest stable Spring Boot that is compatible with the latest stable Spring AI release** (check start.spring.io), built with **Maven**.
 - **Spring AI** for chat, embeddings and the vector store.
 - **Postgres + pgvector**, run locally via `docker-compose`.
 - **LLM and embeddings:** Google Gemini (free tier) via its **OpenAI-compatible endpoint**, using Spring AI's OpenAI client pointed at Gemini's base URL.
