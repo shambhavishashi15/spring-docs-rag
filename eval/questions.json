@@ -1,0 +1,193 @@
+{
+  "keyFactMatching": "Case-insensitive substring match against the answer; '|' separates accepted alternatives.",
+  "expectedPageMatching": "A citation url (section deep link) must start with expectedPage.",
+  "questions": [
+    {
+      "id": "q01",
+      "question": "Which property do I set to activate Spring Boot profiles?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-boot/reference/features/profiles.html",
+      "keyFacts": [
+        "spring.profiles.active"
+      ]
+    },
+    {
+      "id": "q02",
+      "question": "How can I activate several profiles together under one group name?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-boot/reference/features/profiles.html",
+      "keyFacts": [
+        "spring.profiles.group"
+      ]
+    },
+    {
+      "id": "q03",
+      "question": "How do I register @ConfigurationProperties classes so that Spring Boot binds them?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-boot/reference/features/external-config.html",
+      "keyFacts": [
+        "EnableConfigurationProperties",
+        "ConfigurationPropertiesScan"
+      ]
+    },
+    {
+      "id": "q04",
+      "question": "Which environment variable name binds to the property my.main-project.person.first-name?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-boot/reference/features/external-config.html",
+      "keyFacts": [
+        "MY_MAINPROJECT_PERSON_FIRSTNAME"
+      ]
+    },
+    {
+      "id": "q05",
+      "question": "How do I make Spring Boot write its logs to a file, and when do the log files rotate?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-boot/reference/features/logging.html",
+      "keyFacts": [
+        "logging.file.name|logging.file.path",
+        "10 MB"
+      ]
+    },
+    {
+      "id": "q06",
+      "question": "How can I disable a specific auto-configuration class?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-boot/reference/using/auto-configuration.html",
+      "keyFacts": [
+        "exclude",
+        "spring.autoconfigure.exclude"
+      ]
+    },
+    {
+      "id": "q07",
+      "question": "Which condition annotation enables a configuration based on a Spring Environment property, and which attributes refine the check?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-boot/reference/features/developing-auto-configuration.html",
+      "keyFacts": [
+        "ConditionalOnProperty",
+        "havingValue",
+        "matchIfMissing"
+      ]
+    },
+    {
+      "id": "q08",
+      "question": "In which file must auto-configuration classes be listed so that Spring Boot finds them?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-boot/reference/features/developing-auto-configuration.html",
+      "keyFacts": [
+        "AutoConfiguration.imports"
+      ]
+    },
+    {
+      "id": "q09",
+      "question": "Which actuator endpoints are exposed over HTTP by default, and how do I expose more of them?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-boot/reference/actuator/endpoints.html",
+      "keyFacts": [
+        "health",
+        "management.endpoints.web.exposure.include"
+      ]
+    },
+    {
+      "id": "q10",
+      "question": "In a @SpringBootTest, what is the default web environment, and how do I start the embedded server on a random port?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-boot/reference/testing/spring-boot-applications.html",
+      "keyFacts": [
+        "MOCK",
+        "RANDOM_PORT"
+      ]
+    },
+    {
+      "id": "q11",
+      "question": "Which interface represents the Spring IoC container?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-framework/reference/core/beans/basics.html",
+      "keyFacts": [
+        "ApplicationContext"
+      ]
+    },
+    {
+      "id": "q12",
+      "question": "What is the difference between the singleton and prototype bean scopes?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-framework/reference/core/beans/factory-scopes.html",
+      "keyFacts": [
+        "one shared instance|single instance|exactly one instance|one instance",
+        "new bean instance|new instance"
+      ]
+    },
+    {
+      "id": "q13",
+      "question": "How do I declare initialization and destruction callbacks on a @Bean method?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-framework/reference/core/beans/java/bean-annotation.html",
+      "keyFacts": [
+        "initMethod",
+        "destroyMethod"
+      ]
+    },
+    {
+      "id": "q14",
+      "question": "Which exceptions make a @Transactional method roll back by default?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/annotations.html",
+      "keyFacts": [
+        "RuntimeException",
+        "Error",
+        "checked"
+      ]
+    },
+    {
+      "id": "q15",
+      "question": "What does PROPAGATION_REQUIRES_NEW do?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/tx-propagation.html",
+      "keyFacts": [
+        "independent physical transaction|independent transaction|new transaction"
+      ]
+    },
+    {
+      "id": "q16",
+      "question": "How do I handle exceptions thrown by Spring MVC controllers, and how do I apply that handling across all controllers?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-exceptionhandler.html",
+      "keyFacts": [
+        "ExceptionHandler",
+        "ControllerAdvice"
+      ]
+    },
+    {
+      "id": "q17",
+      "question": "How does Spring MVC support RFC 9457 problem details in error responses?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html",
+      "keyFacts": [
+        "ProblemDetail",
+        "ResponseEntityExceptionHandler"
+      ]
+    },
+    {
+      "id": "q18",
+      "question": "How do I enable method validation with Bean Validation in a Spring application?",
+      "answerable": true,
+      "expectedPage": "https://docs.spring.io/spring-framework/reference/core/validation/beanvalidation.html",
+      "keyFacts": [
+        "MethodValidationPostProcessor"
+      ]
+    },
+    {
+      "id": "q19",
+      "question": "How do I configure OAuth2 login with Spring Security?",
+      "answerable": false,
+      "expectedAnswer": "not in the docs"
+    },
+    {
+      "id": "q20",
+      "question": "How do I set the concurrency of a Kafka listener in Spring Boot?",
+      "answerable": false,
+      "expectedAnswer": "not in the docs"
+    }
+  ]
+}
