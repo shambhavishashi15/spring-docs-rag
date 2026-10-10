@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head><title>Transactions</title></head>
+<body>
+<article class="doc">
+<h1 class="page">Transactions</h1>
+<div class="sect1">
+<h2 id="tx.rollback">Rollback Rules</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Any RuntimeException or Error triggers rollback, and any checked Exception does not.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="tx.propagation">Propagation</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>REQUIRES_NEW always uses an independent physical transaction for each affected transaction scope.</p></div>
+</div>
+</div>
+</article>
+</body>
+</html>

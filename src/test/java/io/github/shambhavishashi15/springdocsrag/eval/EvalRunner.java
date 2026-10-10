@@ -22,7 +22,8 @@ import org.springframework.web.client.RestClientException;
 import tools.jackson.databind.json.JsonMapper;
 
 // Scores POST /api/v1/ask on a running app against eval/questions.json and writes eval/report.md.
-// It makes real Gemini calls, so it is skipped unless eval.baseUrl is set (./mvnw verify and CI never run it):
+// It makes real Gemini calls, so ./mvnw verify and CI never run it: its name doesn't match Surefire's default
+// *Test patterns, and it is skipped unless eval.baseUrl is set. Run it explicitly against a running app:
 //   ./mvnw test -Dtest=EvalRunner -Deval.baseUrl=http://localhost:8080
 @EnabledIfSystemProperty(named = "eval.baseUrl", matches = ".+")
 class EvalRunner {
