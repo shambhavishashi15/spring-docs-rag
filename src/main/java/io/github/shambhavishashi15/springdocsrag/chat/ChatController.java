@@ -1,5 +1,6 @@
 package io.github.shambhavishashi15.springdocsrag.chat;
 
+import jakarta.validation.Valid;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,7 +19,7 @@ public class ChatController {
 	}
 
 	@PostMapping
-	public ChatReply chat(@RequestBody ChatRequest request) {
+	public ChatReply chat(@Valid @RequestBody ChatRequest request) {
 		String reply = chatClient.prompt()
 				.user(request.message())
 				.call()

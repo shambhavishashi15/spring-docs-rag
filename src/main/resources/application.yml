@@ -57,3 +57,8 @@ app:
     # Characters per chunk and characters shared with the previous chunk (must be < chunk-size / 2).
     chunk-size: 1200
     chunk-overlap: 200
+  ask:
+    # Chunks retrieved per question (~1,200 characters each).
+    top-k: 6
+    # Minimum cosine similarity (0 accepts all); tune once the eval gives data.
+    similarity-threshold: 0.0

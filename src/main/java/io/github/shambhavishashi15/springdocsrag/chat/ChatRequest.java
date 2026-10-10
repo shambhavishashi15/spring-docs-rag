@@ -1,4 +1,6 @@
 package io.github.shambhavishashi15.springdocsrag.chat;
 
-public record ChatRequest(String message) {
+import jakarta.validation.constraints.NotBlank;
+
+public record ChatRequest(@NotBlank String message) {
 }

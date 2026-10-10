@@ -2,7 +2,7 @@
 
 A Retrieval-Augmented Generation (RAG) service that answers questions about Spring using a set of Spring documentation pages. Answers are grounded only in retrieved chunks and cite their sources (page + section). Built with Java 21, Spring Boot, Spring AI, pgvector and Google Gemini.
 
-**Status:** work in progress — milestone 2 (ingestion).
+**Status:** work in progress — milestone 3 (RAG endpoint).
 
 ## Prerequisites
 
@@ -38,6 +38,17 @@ A Retrieval-Augmented Generation (RAG) service that answers questions about Spri
    ```
 
    It returns a summary such as `{"pagesIngested":15,"pagesSkipped":0,"chunksStored":448}`. A first run on the free tier can take a few minutes because the per-minute embedding quota is waited out with exponential backoff; if the daily quota is used up, the call fails fast instead.
+
+5. Ask a question:
+
+   ```bash
+   curl -s localhost:8080/api/v1/ask -H 'Content-Type: application/json' \
+     -d '{"question": "How do I activate a Spring profile?"}'
+   ```
+
+   The answer cites its sources as `[n]` markers, and `citations` maps each one to its page, section and deep link. If the docs don't contain the answer, `answered` is `false` and the answer says so. Errors are returned as RFC 9457 `ProblemDetail` JSON (400 for invalid requests, 429 when Gemini's quota is exhausted, with `Retry-After`).
+
+   Or try the API in Swagger UI at <http://localhost:8080/swagger-ui.html>.
 
 To run the tests: `./mvnw test` (needs Docker; the tests never call the Gemini API).
 
