@@ -45,7 +45,7 @@ Guidance for Claude Code when working in this repository.
 3. **RAG endpoint:** `/api/v1/ask` with citations, request validation, global exception handling (`@RestControllerAdvice`), and a minimal UI or Swagger (springdoc-openapi).
 4. **Quality and delivery:** eval set (20 Q&A pairs), JUnit/Mockito tests with the LLM mocked, multi-stage Dockerfile, GitHub Actions CI, and a strong README.
 
-**Current milestone: 2**
+**Current milestone: 3**
 
 ## Conventions
 
