@@ -21,7 +21,9 @@ Guidance for Claude Code when working in this repository.
 - **Java 21** + the **latest stable Spring Boot that is compatible with the latest stable Spring AI release** (check start.spring.io), built with **Maven**.
 - **Spring AI** for chat, embeddings and the vector store.
 - **Postgres + pgvector**, run locally via `docker-compose`.
-- **LLM and embeddings:** Google Gemini (free tier) via its **OpenAI-compatible endpoint**, using Spring AI's OpenAI client pointed at Gemini's base URL.
+- **LLM and embeddings:** Google Gemini (free tier).
+  - **Chat:** via Gemini's **OpenAI-compatible endpoint**, using Spring AI's OpenAI client pointed at Gemini's base URL.
+  - **Embeddings:** via Spring AI's **Google GenAI** embedding starter (Gemini Developer API, same API key, no Vertex AI). The OpenAI SDK used by Spring AI 2.x rejects Gemini's OpenAI-compatible embedding responses (the first item omits `index`). Exactly one `EmbeddingModel` bean: OpenAI embeddings are turned off via `spring.ai.model.embedding: none`.
 - **Environment:** GitHub Codespaces.
 
 ## Secrets

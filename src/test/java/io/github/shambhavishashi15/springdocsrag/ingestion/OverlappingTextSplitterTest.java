@@ -3,6 +3,7 @@ package io.github.shambhavishashi15.springdocsrag.ingestion;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,12 +12,15 @@ import org.springframework.ai.document.Document;
 
 class OverlappingTextSplitterTest {
 
+	// Not read by the splitter; only needed to build IngestionProperties.
+	private static final Path DOCS_DIR = Path.of("docs");
+
 	private static final int CHUNK_SIZE = 100;
 
 	private static final int CHUNK_OVERLAP = 20;
 
 	private final OverlappingTextSplitter splitter =
-			new OverlappingTextSplitter(new IngestionProperties(CHUNK_SIZE, CHUNK_OVERLAP));
+			new OverlappingTextSplitter(new IngestionProperties(DOCS_DIR, CHUNK_SIZE, CHUNK_OVERLAP));
 
 	// Unique words make overlaps and cut words detectable; sentences and paragraphs give break points.
 	private static final String TEXT = buildText(300);
@@ -81,13 +85,13 @@ class OverlappingTextSplitterTest {
 	@Test
 	void rejectsOverlapOfHalfTheChunkSizeOrMore() {
 		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new OverlappingTextSplitter(new IngestionProperties(100, 50)));
+				.isThrownBy(() -> new OverlappingTextSplitter(new IngestionProperties(DOCS_DIR, 100, 50)));
 	}
 
 	@Test
 	void rejectsNonPositiveChunkSize() {
 		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new OverlappingTextSplitter(new IngestionProperties(0, 0)));
+				.isThrownBy(() -> new OverlappingTextSplitter(new IngestionProperties(DOCS_DIR, 0, 0)));
 	}
 
 	// Length of the longest suffix of previous that is also a prefix of next.

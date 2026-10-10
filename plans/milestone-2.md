@@ -14,6 +14,7 @@ Here's the plan for milestone 2: ingestion.
 | HTML parsing | `org.jsoup:jsoup` directly | Spring AI's `JsoupDocumentReader` returns one `Document` per page. We need **one per section** to cite page + section, so we walk the headings ourselves. |
 | Chunking | Our own `OverlappingTextSplitter extends TextSplitter` | Spring AI 2.0.1's `TokenTextSplitter` has no overlap setting. Extending Spring AI's `TextSplitter` keeps metadata handling idiomatic. |
 | Embedding model | `gemini-embedding-2` (override with `GEMINI_EMBEDDING_MODEL`) | Newest stable (non-preview) Gemini embedding model, which is the same rule we used for the chat model. Verified in step 2: it honors `dimensions: 768`, batches multiple inputs, and returns unit-length vectors. `gemini-embedding-001` also works, but returns un-normalized vectors when truncated. |
+| Embedding client | Spring AI **Google GenAI** embedding starter (Gemini Developer API, API key only), **not** the OpenAI client | Found in step 5: Gemini's OpenAI-compatible `/embeddings` omits `index` on the first item, and the OpenAI Java SDK (Spring AI 2.x) rejects that on every call. Verified from the 2.0.1 jars and a live call that the Google starter works with just an API key and honors 768 dimensions. Chat stays on the OpenAI-compatible endpoint. `spring.ai.model.embedding: none` turns off the OpenAI embedding auto-config, so there is exactly one `EmbeddingModel` (asserted in the context test). |
 | Embedding dimensions | **768** | The default is 3072, but pgvector's HNSW index supports at most 2000 dimensions for `vector`. 768 is one of Gemini's recommended sizes. |
 | Schema | `spring.ai.vectorstore.pgvector.initialize-schema: true`, with `dimensions: 768` set explicitly | Spring AI creates the table and the HNSW index. Setting the dimensions explicitly avoids an embedding API call at startup. |
 | Idempotency | A per-page **fingerprint** covering the page text and the ingestion settings. Unchanged → skip, changed → replace. | See step 5. No duplicates, and no wasted free-tier quota on re-runs. |
@@ -81,9 +82,10 @@ Here's the plan for milestone 2: ingestion.
   - that splitting doesn't break mid-word
 - **How you test it:** run `./mvnw test -Dtest=OverlappingTextSplitterTest`.
 
-## Step 5: `IngestionService` + idempotent re-runs
+## Step 5: `IngestionService` + `POST /api/v1/ingest` + idempotent re-runs
+- **Endpoint:** a thin `IngestionController` (moved here from step 6, so this step can be tested end to end). It returns `{"pagesIngested": 1, "pagesSkipped": 14, "chunksStored": 93}`. `ingest()` is `synchronized`, so concurrent requests can't both store a page.
 - **Fingerprint per page:** SHA-256 of
-  - the page's clean text
+  - the page title, plus every parsed section's heading, anchor and text. Hashing the parsed sections means parser changes that alter the output also re-ingest.
   - `chunkSize`
   - `chunkOverlap`
   - the embedding model name
@@ -94,32 +96,38 @@ Here's the plan for milestone 2: ingestion.
   1. parse
   2. compute the fingerprint
   3. **if** chunks exist with the same `source` and `fingerprint` → **skip** (no embedding calls)
-  4. **else** delete the page's old chunks (`vectorStore.delete(filter: source == url)`), split, and `vectorStore.add(chunks)`
+  4. **else** split, then in **one transaction** (`TransactionTemplate`) delete the page's old chunks (`vectorStore.delete(source == url)`) and `vectorStore.add(chunks)`. If embedding fails mid-page, the delete rolls back and the old chunks stay. Verified when a 429 hit mid-run.
 - **Why:**
   - An unchanged re-run creates **no duplicates** and makes **no API calls**.
   - A changed page (or changed settings) is fully replaced, so stale chunks can't linger.
   - Alternative: deterministic chunk IDs with upsert. That re-embeds everything every run and leaves stale tail chunks behind.
 - **Caveats:**
   - Changing `dimensions` also changes the column type (`vector(768)`), so the table has to be dropped and recreated. I'll document that rather than automate it.
-  - Changes to the parser or splitter *code* aren't captured by the fingerprint. For those, clear the table, which I'll also document.
+  - Changes to the splitter *code*, or parser changes that don't alter the output, aren't captured by the fingerprint. For those, clear the table, which I'll document.
 - **Chunk content and metadata:**
   - Each chunk's text is prefixed with `"<page title> > <section heading>"`, which is what gets embedded and what the LLM sees later.
-  - Metadata: `source` (page url), `pageTitle`, `section`, `url` (deep link), `fingerprint`, plus Spring AI's `chunk_index`.
-- **`spring.ai.openai.embedding.metadata-mode: none`:** the default (`embed`) makes Spring AI prepend *every* metadata entry as `key: value` lines to the text it embeds. That would put URLs and hashes into the vectors. Our explicit prefix carries the useful context instead.
+  - Metadata: `source` (page url), `pageTitle`, `section`, `url` (deep link), `fingerprint`, plus Spring AI's `chunk_index`, `total_chunks` and `parent_document_id`.
+- **Only chunk text is embedded:** `PgVectorStore` embeds through `EmbeddingModel.getEmbeddingContent(doc)`, which returns `doc.getText()`, so metadata doesn't leak into the vectors.
 - **Hash lookup:** a single `JdbcTemplate` query on `metadata->>'source'` / `metadata->>'fingerprint'`. `VectorStore` has no "find by metadata" without a similarity search.
-- **Batching:** `PgVectorStore` embeds in batches via Spring AI's `BatchingStrategy`. I'll check Gemini's per-request input limit.
+- **Batching:** `PgVectorStore` embeds in batches via Spring AI's `TokenCountBatchingStrategy` (8191 tokens per request, minus a 10% reserve).
+- **Verified against Gemini:**
+  - The full corpus is 448 chunks across 15 pages, with one fingerprint per page and 768-dimension vectors.
+  - The free tier rate-limited us after about 100–150 inputs per minute. Re-runs resumed where the last one stopped (skipping the stored pages), and four runs completed the corpus.
+  - An unchanged re-run skipped all 15 pages in 0.2s, made no API calls, and left the totals unchanged.
+  - Editing one page re-ingested only that page and replaced its 5 chunks (total still 448). Restoring the file replaced them again.
 - **How you test it:**
   - Ingest, then run `select count(*), count(distinct metadata->>'source') from vector_store`.
-  - Rerun: the count is unchanged and the log says "skipped N unchanged pages".
+  - Rerun: the count is unchanged and the response says `"pagesSkipped": 15`.
   - Edit one HTML file: only that page is re-ingested.
-  - Change `chunk-overlap`: every page is re-ingested.
+  - Change `chunk-overlap`: every page is re-ingested. This needs step 6's retry to get past the rate limit.
 
-## Step 6: `POST /api/v1/ingest` + 429 resilience
-- **Endpoint:** a thin `IngestionController` that returns `{"pagesIngested": 3, "pagesSkipped": 12, "chunksStored": 140}`.
-- **429 handling:**
-  - Spring AI 2.x has the OpenAI SDK's own retry (`spring.ai.openai.*.max-retries`) and also `spring.ai.retry.*`. I'll check which layer applies to embedding calls in 2.0.1 and configure only that one.
-  - Backoff: initial interval ~2s, multiplier 2, max ~60s, about 6 attempts.
-- **How you test it:** `curl -X POST localhost:8080/api/v1/ingest` completes for all pages. Logs show the retries if a 429 occurs.
+## Step 6: 429 resilience
+- **Retry layer:** embeddings go through Spring AI's `GoogleGenAiTextEmbeddingModel`, which wraps calls in Spring Framework 7's `org.springframework.core.retry.RetryTemplate`. It uses our `RetryTemplate` bean if one exists, otherwise Spring AI's `RetryUtils.DEFAULT_RETRY_TEMPLATE`.
+  - In step 5, 429s still surfaced through that template. I'll check whether the default retries the Google SDK's `ClientException` at all, and whether `spring.ai.retry.*` applies to this client, before choosing between configuring Spring AI's retry and defining our own `RetryTemplate` bean that retries only on 429.
+- **Backoff:** Gemini says "retry in ~40s" and quotas are per minute, so the backoff has to reach about a minute: initial ~5s, multiplier 2, max ~60s, about 6 attempts.
+- **How you test it:**
+  - Change `chunk-overlap`, which re-ingests all 448 chunks and forces 429s.
+  - `curl -X POST localhost:8080/api/v1/ingest` completes for all 15 pages in a single call, and the logs show the retries.
 
 ## Step 7: README
 - **Updates:**

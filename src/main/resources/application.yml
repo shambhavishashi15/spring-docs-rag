@@ -7,29 +7,46 @@ spring:
     username: ${DB_USERNAME:springdocsrag}
     password: ${DB_PASSWORD:springdocsrag}
   ai:
+    model:
+      # Turns off the OpenAI embedding auto-configuration so the Google GenAI one is the only
+      # EmbeddingModel (it is enabled by spring.ai.model.embedding.text, which defaults to on).
+      embedding: none
     vectorstore:
       pgvector:
         # Creates the vector_store table and index on startup (off by default).
         initialize-schema: true
         # Must match the embedding dimensions, so it references them. Set explicitly so startup
         # never calls the embedding API to discover it.
-        dimensions: ${spring.ai.openai.embedding.dimensions}
+        dimensions: ${spring.ai.google.genai.embedding.text.options.dimensions}
         index-type: hnsw
         distance-type: cosine-distance
     openai:
-      # Gemini's OpenAI-compatible endpoint. The OpenAI SDK appends "/chat/completions" to this URL,
-      # so no completions-path override is needed (Spring AI 2.x has no such property).
+      # Chat only. Gemini's OpenAI-compatible endpoint; the OpenAI SDK appends "/chat/completions"
+      # to this URL, so no completions-path override is needed (Spring AI 2.x has no such property).
       base-url: https://generativelanguage.googleapis.com/v1beta/openai
       api-key: ${GEMINI_API_KEY}
       chat:
         model: ${GEMINI_CHAT_MODEL:gemini-3.8-flash}
-      embedding:
-        model: ${GEMINI_EMBEDDING_MODEL:gemini-embedding-2}
-        # Gemini defaults to 3072; 768 keeps us under pgvector HNSW's 2000-dimension limit.
-        dimensions: 768
+    google:
+      genai:
+        # Embeddings via Gemini's native API (Gemini Developer API mode: API key, no Vertex AI project).
+        embedding:
+          api-key: ${GEMINI_API_KEY}
+          text:
+            options:
+              model: ${GEMINI_EMBEDDING_MODEL:gemini-embedding-2}
+              # Gemini defaults to 3072; 768 keeps us under pgvector HNSW's 2000-dimension limit.
+              dimensions: 768
+
+# TextSplitter logs one INFO line per section it splits.
+logging:
+  level:
+    org.springframework.ai.transformer.splitter: warn
 
 app:
   ingestion:
+    # Holds manifest.csv and the HTML fetched by scripts/fetch-docs.sh.
+    docs-dir: ${DOCS_DIR:docs}
     # Characters per chunk and characters shared with the previous chunk (must be < chunk-size / 2).
     chunk-size: 1200
     chunk-overlap: 200
