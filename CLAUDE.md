@@ -14,6 +14,7 @@ Guidance for Claude Code when working in this repository.
 - Prefer idiomatic, conventional Spring code over clever code. No unnecessary abstractions or dependencies.
 - Stay within the current milestone. Don't jump ahead.
 - After each completed step, tell me how to test it, then commit with a clear message and push to main after I approve.
+- Before every command or file change, explain in 1–2 plain sentences what it does and why, so I can approve it knowingly.
 
 ## Stack
 
