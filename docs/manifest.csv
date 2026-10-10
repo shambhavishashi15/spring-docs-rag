@@ -1,0 +1,16 @@
+file,url,title
+framework-container-overview,https://docs.spring.io/spring-framework/reference/core/beans/basics.html,Spring Framework: Container Overview
+framework-bean-scopes,https://docs.spring.io/spring-framework/reference/core/beans/factory-scopes.html,Spring Framework: Bean Scopes
+framework-bean-annotation,https://docs.spring.io/spring-framework/reference/core/beans/java/bean-annotation.html,Spring Framework: Using the @Bean Annotation
+framework-transactional,https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/annotations.html,Spring Framework: Using @Transactional
+framework-tx-propagation,https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/tx-propagation.html,Spring Framework: Transaction Propagation
+framework-mvc-exceptions,https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-exceptionhandler.html,Spring Framework: MVC Exceptions
+framework-mvc-error-responses,https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html,Spring Framework: MVC Error Responses
+framework-bean-validation,https://docs.spring.io/spring-framework/reference/core/validation/beanvalidation.html,Spring Framework: Java Bean Validation
+boot-externalized-config,https://docs.spring.io/spring-boot/reference/features/external-config.html,Spring Boot: Externalized Configuration
+boot-profiles,https://docs.spring.io/spring-boot/reference/features/profiles.html,Spring Boot: Profiles
+boot-logging,https://docs.spring.io/spring-boot/reference/features/logging.html,Spring Boot: Logging
+boot-auto-configuration,https://docs.spring.io/spring-boot/reference/using/auto-configuration.html,Spring Boot: Auto-configuration
+boot-developing-auto-configuration,https://docs.spring.io/spring-boot/reference/features/developing-auto-configuration.html,Spring Boot: Creating Your Own Auto-configuration
+boot-actuator-endpoints,https://docs.spring.io/spring-boot/reference/actuator/endpoints.html,Spring Boot: Actuator Endpoints
+boot-testing,https://docs.spring.io/spring-boot/reference/testing/spring-boot-applications.html,Spring Boot: Testing Spring Boot Applications
