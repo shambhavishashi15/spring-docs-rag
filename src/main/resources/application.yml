@@ -44,6 +44,13 @@ logging:
     org.springframework.ai.transformer.splitter: warn
 
 app:
+  embedding:
+    # Retries Gemini embedding calls on 429 and 5xx with exponential backoff (5s, 10s, 20s, 40s, then 60s).
+    # Free-tier quotas are per minute, so the backoff must be able to wait out a full minute.
+    retry:
+      max-attempts: 8
+      initial-delay: 5s
+      max-delay: 60s
   ingestion:
     # Holds manifest.csv and the HTML fetched by scripts/fetch-docs.sh.
     docs-dir: ${DOCS_DIR:docs}

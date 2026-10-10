@@ -2,7 +2,9 @@ package io.github.shambhavishashi15.springdocsrag;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.shambhavishashi15.springdocsrag.embedding.MaxSizeBatchingStrategy;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.google.genai.text.GoogleGenAiTextEmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,11 @@ class SpringDocsRagApplicationTests {
 	void usesGoogleGenAiAsTheOnlyEmbeddingModel() {
 		assertThat(context.getBeansOfType(EmbeddingModel.class)).hasSize(1)
 				.allSatisfy((name, model) -> assertThat(model).isInstanceOf(GoogleGenAiTextEmbeddingModel.class));
+	}
+
+	@Test
+	void capsPgVectorStoreBatchesAtGeminisLimit() {
+		assertThat(context.getBean(BatchingStrategy.class)).isInstanceOf(MaxSizeBatchingStrategy.class);
 	}
 
 }

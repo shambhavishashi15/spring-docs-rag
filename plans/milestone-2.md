@@ -121,13 +121,21 @@ Here's the plan for milestone 2: ingestion.
   - Edit one HTML file: only that page is re-ingested.
   - Change `chunk-overlap`: every page is re-ingested. This needs step 6's retry to get past the rate limit.
 
-## Step 6: 429 resilience
-- **Retry layer:** embeddings go through Spring AI's `GoogleGenAiTextEmbeddingModel`, which wraps calls in Spring Framework 7's `org.springframework.core.retry.RetryTemplate`. It uses our `RetryTemplate` bean if one exists, otherwise Spring AI's `RetryUtils.DEFAULT_RETRY_TEMPLATE`.
-  - In step 5, 429s still surfaced through that template. I'll check whether the default retries the Google SDK's `ClientException` at all, and whether `spring.ai.retry.*` applies to this client, before choosing between configuring Spring AI's retry and defining our own `RetryTemplate` bean that retries only on 429.
-- **Backoff:** Gemini says "retry in ~40s" and quotas are per minute, so the backoff has to reach about a minute: initial ~5s, multiplier 2, max ~60s, about 6 attempts.
+## Step 6: 429 resilience + Gemini batch limit
+- **Which retry actually applies (from the 2.0.1 bytecode):**
+  - **Spring AI's `RetryTemplate`:** `GoogleGenAiTextEmbeddingModel` wraps calls in it, and the auto-configured bean (`spring.ai.retry.*`) retries only `TransientAiException` and `ResourceAccessException`. The model doesn't translate the Google SDK's `ClientException`, so Spring AI **never** retries these calls; `spring.ai.retry.*` has no effect on them.
+  - **The Google SDK's `RetryInterceptor`:** always installed. Its defaults retry 408/429/5xx with 5 attempts and 1→2→4→8s backoff, about 15s in total. That's too short for per-minute free-tier quotas (Gemini asked for "retry in 40s"), which is why 429s surfaced in step 5. It also logs nothing.
+- **Fix: configure the SDK layer, the only one that runs.**
+  - `GeminiEmbeddingConfig` replaces the auto-configured `GoogleGenAiEmbeddingConnectionDetails` (`@ConditionalOnMissingBean`) with one wrapping our own `Client` (`builder().genAiClient(...)` uses it as-is).
+  - That client's `HttpRetryOptions` cover 429/500/502/503/504 with exponential backoff. The defaults from `app.embedding.retry.*` are 8 attempts and 5s initial delay, doubling, capped at 60s, so waits of 5, 10, 20, 40, 60, 60, 60s.
+  - **Trade-off:** retries are silent, because the SDK has no retry logging. Adding a Spring-level retry just for logging would stack a second layer.
+- **Batch limit:**
+  - **Gemini:** verified live, a 101-input call fails with `400 … at most 100 requests can be in one batch`.
+  - **The gap:** `PgVectorStore`'s default `TokenCountBatchingStrategy` caps tokens (8191 minus 10%), not item count, and the Google model doesn't partition. Our ~250-token chunks give ~25–30 per batch, so we were under the limit only by luck.
+  - **Fix:** a `BatchingStrategy` bean (`MaxSizeBatchingStrategy`, which also replaces a `@ConditionalOnMissingBean` default) keeps the token batching and splits any batch over 100. It has unit tests, and the context test checks it's the bean in use.
 - **How you test it:**
-  - Change `chunk-overlap`, which re-ingests all 448 chunks and forces 429s.
-  - `curl -X POST localhost:8080/api/v1/ingest` completes for all 15 pages in a single call, and the logs show the retries.
+  - Run `scripts/fetch-docs.sh`, `truncate vector_store`, then `curl -X POST localhost:8080/api/v1/ingest`. It completes all 15 pages in a single call, waiting through 429s.
+  - Call it again: `pagesSkipped: 15`, no API calls.
 
 ## Step 7: README
 - **Updates:**
