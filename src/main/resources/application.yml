@@ -1,3 +1,11 @@
 spring:
   application:
     name: spring-docs-rag
+  ai:
+    openai:
+      # Gemini's OpenAI-compatible endpoint. The OpenAI SDK appends "/chat/completions" to this URL,
+      # so no completions-path override is needed (Spring AI 2.x has no such property).
+      base-url: https://generativelanguage.googleapis.com/v1beta/openai
+      api-key: ${GEMINI_API_KEY}
+      chat:
+        model: ${GEMINI_CHAT_MODEL:gemini-3.8-flash}
