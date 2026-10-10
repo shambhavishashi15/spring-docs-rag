@@ -39,7 +39,7 @@ Guidance for Claude Code when working in this repository.
 ## Milestones
 
 1. **Skeleton:** Spring Boot project, a Gemini call via `/api/v1/chat`, `docker-compose` with pgvector.
-2. **Ingestion:** HTML to clean text, chunking with overlap, embeddings, storage in pgvector, idempotent re-runs.
+2. **Ingestion:** HTML to clean text, chunking with overlap, embeddings, storage in pgvector, idempotent re-runs. Small unit tests for the pure ingestion logic (HTML parser, text splitter) are allowed here; the full test suite stays in milestone 4.
 3. **RAG endpoint:** `/api/v1/ask` with citations, request validation, global exception handling (`@RestControllerAdvice`), and a minimal UI or Swagger (springdoc-openapi).
 4. **Quality and delivery:** eval set (20 Q&A pairs), JUnit/Mockito tests with the LLM mocked, multi-stage Dockerfile, GitHub Actions CI, and a strong README.
 
