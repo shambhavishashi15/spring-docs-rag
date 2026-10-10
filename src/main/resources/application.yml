@@ -11,9 +11,9 @@ spring:
       pgvector:
         # Creates the vector_store table and index on startup (off by default).
         initialize-schema: true
-        # Must match the embedding dimensions. Set explicitly so startup never calls the
-        # embedding API to discover it. 768 keeps us under HNSW's 2000-dimension limit.
-        dimensions: 768
+        # Must match the embedding dimensions, so it references them. Set explicitly so startup
+        # never calls the embedding API to discover it.
+        dimensions: ${spring.ai.openai.embedding.dimensions}
         index-type: hnsw
         distance-type: cosine-distance
     openai:
@@ -23,3 +23,7 @@ spring:
       api-key: ${GEMINI_API_KEY}
       chat:
         model: ${GEMINI_CHAT_MODEL:gemini-3.8-flash}
+      embedding:
+        model: ${GEMINI_EMBEDDING_MODEL:gemini-embedding-2}
+        # Gemini defaults to 3072; 768 keeps us under pgvector HNSW's 2000-dimension limit.
+        dimensions: 768
