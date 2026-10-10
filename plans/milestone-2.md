@@ -129,6 +129,12 @@ Here's the plan for milestone 2: ingestion.
   - `GeminiEmbeddingConfig` replaces the auto-configured `GoogleGenAiEmbeddingConnectionDetails` (`@ConditionalOnMissingBean`) with one wrapping our own `Client` (`builder().genAiClient(...)` uses it as-is).
   - That client's `HttpRetryOptions` cover 429/500/502/503/504 with exponential backoff. The defaults from `app.embedding.retry.*` are 8 attempts and 5s initial delay, doubling, capped at 60s, so waits of 5, 10, 20, 40, 60, 60, 60s.
   - **Trade-off:** retries are silent, because the SDK has no retry logging. Adding a Spring-level retry just for logging would stack a second layer.
+- **Fail fast on long waits (added after the first full run hit the daily quota):**
+  - **The problem:** the free tier also has a **daily** limit (1,000 embedding requests). Its 429 says "retry in 8h", but the SDK's `RetryInterceptor` only checks status codes, so it retried for ~4.5 minutes and then failed anyway.
+  - **Fix:** `RetryDelayLimitInterceptor`, an OkHttp **network** interceptor on a custom client (`ClientOptions.customHttpClient`). Network interceptors run inside the SDK's retry loop, once per attempt. On a 429 it reads `google.rpc.RetryInfo.retryDelay` from the body (`peekBody`, so the SDK can still read it). If the delay is longer than `app.embedding.retry.max-delay`, it throws `EmbeddingQuotaExceededException` (unchecked, because the SDK retries `IOException`s). Shorter delays and 429s without `RetryInfo` keep the normal backoff.
+  - **Custom client caveat:** the SDK skips its own timeout setup for a custom client, so ours copies it (0 = no timeout).
+  - **Tests:** `RetryDelayLimitInterceptorTest` covers the body parsing. `GeminiEmbeddingRetryTest` runs the real SDK client against a local fake Gemini: a long delay stops after 1 request, a short one is retried `max-attempts` times.
+  - **HTTP mapping:** milestone 3's `@RestControllerAdvice` turns the exception into a 429 with `Retry-After`.
 - **Batch limit:**
   - **Gemini:** verified live, a 101-input call fails with `400 … at most 100 requests can be in one batch`.
   - **The gap:** `PgVectorStore`'s default `TokenCountBatchingStrategy` caps tokens (8191 minus 10%), not item count, and the Google model doesn't partition. Our ~250-token chunks give ~25–30 per batch, so we were under the limit only by luck.
