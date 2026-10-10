@@ -18,12 +18,12 @@ public class ChatController {
 	}
 
 	@PostMapping
-	public ChatResponse chat(@RequestBody ChatRequest request) {
+	public ChatReply chat(@RequestBody ChatRequest request) {
 		String reply = chatClient.prompt()
 				.user(request.message())
 				.call()
 				.content();
-		return new ChatResponse(reply);
+		return new ChatReply(reply);
 	}
 
 }
