@@ -1,7 +1,21 @@
 spring:
   application:
     name: spring-docs-rag
+  # Dev defaults match compose.yaml; override with env vars elsewhere.
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/springdocsrag}
+    username: ${DB_USERNAME:springdocsrag}
+    password: ${DB_PASSWORD:springdocsrag}
   ai:
+    vectorstore:
+      pgvector:
+        # Creates the vector_store table and index on startup (off by default).
+        initialize-schema: true
+        # Must match the embedding dimensions. Set explicitly so startup never calls the
+        # embedding API to discover it. 768 keeps us under HNSW's 2000-dimension limit.
+        dimensions: 768
+        index-type: hnsw
+        distance-type: cosine-distance
     openai:
       # Gemini's OpenAI-compatible endpoint. The OpenAI SDK appends "/chat/completions" to this URL,
       # so no completions-path override is needed (Spring AI 2.x has no such property).
