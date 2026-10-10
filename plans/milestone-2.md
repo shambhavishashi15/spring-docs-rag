@@ -47,13 +47,19 @@ Here's the plan for milestone 2: ingestion.
 - **How you test it:** run a one-off `curl` against Gemini's `/embeddings` endpoint and check the vector length.
 
 ## Step 3: HTML → clean sections (`HtmlSectionParser`)
-- **Package `ingestion`:** a `record Section(String pageTitle, String url, String heading, String text)`.
-- **Parsing:** Jsoup selects the page's main article element and drops noise:
-  - `nav`, header/footer, `script`/`style`
-  - the table of contents, "edit this page" links, and breadcrumbs
-- **Sections:** a new section starts at each `h2`/`h3`. An h3 is recorded as `"h2 heading > h3 heading"`.
-- **Code blocks:** kept as text with their line breaks preserved.
-- **Selectors:** I'll write them after inspecting a downloaded page.
+- **Package `ingestion`:** a `record Section(String pageTitle, String pageUrl, String heading, String anchor, String text)`, with `url()` returning the deep link `pageUrl#anchor`. Every Antora `h2`/`h3` has a stable `id`, so citations can link straight to the section.
+- **Parsing:** Jsoup selects `article.doc`, which leaves out the site nav, header and footer. Inside it we remove:
+  - breadcrumbs, prev/next pagination, and tab labels
+  - every code-tab panel except the first. The others (Kotlin, YAML) repeat the same example.
+- **Sections:**
+  - The page intro (`#preamble`) is a section headed by the page's `h1`.
+  - A new section starts at each `h2`/`h3`. An h3 is recorded as `"h2 heading > h3 heading"`.
+  - `h4` content stays inside its h3 section, and sections with no text are skipped.
+- **Text:**
+  - Code (`pre`) is kept verbatim, with line breaks and indentation.
+  - Other text has its whitespace collapsed, and blocks are separated by blank lines (which step 4 splits on).
+  - Admonitions become `"Note: …"` / `"Warning: …"`.
+- **Checked on all 15 real pages:** after noise removal, every word in the article appears in some section.
 - **Unit tests:** `HtmlSectionParserTest` runs against a small fixture HTML in `src/test/resources`. It checks:
   - that noise is removed
   - the section boundaries
