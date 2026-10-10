@@ -71,8 +71,9 @@ Here's the plan for milestone 2: ingestion.
 - **Splitting:** per section, so a chunk never crosses a section boundary.
 - **Size and overlap:** ~1,200 characters with ~200 overlap, breaking on paragraph or sentence boundaries where possible. Configurable via a `@ConfigurationProperties` record (`app.ingestion.chunk-size`, `chunk-overlap`).
   - **Why characters, not tokens:** they're easy to explain, and we stay well under the embedding input limit. Alternative: token-based splitting with JTokkit.
-- **Chunk content:** each chunk's text is prefixed with `"<page title> > <section heading>"` so the embedding carries the context.
-- **Chunk metadata:** `source` (url), `pageTitle`, `section`, `chunkIndex`, `fingerprint`.
+- **Built on Spring AI's `TextSplitter`:** we only implement `splitText(String)`. `split(Document)` copies the section's metadata to every chunk and adds `chunk_index`, `total_chunks` and `parent_document_id`, so we don't add our own chunk index.
+- **Break points:** a chunk is cut at the best break in the second half of its window: blank line, then newline (code), then `". "`, then a space. The next chunk starts ≤ `chunkOverlap` characters back, on a word boundary. `chunkOverlap < chunkSize / 2` is enforced, which guarantees progress.
+- **Real data (15 pages, 1200/200):** 448 chunks. Median size is 983 chars and the max is 1200. 11 chunks are under 200 chars, all genuinely short sections.
 - **Unit tests:** `OverlappingTextSplitterTest` checks:
   - that chunks stay within the size limit
   - that consecutive chunks share the configured overlap
@@ -101,6 +102,10 @@ Here's the plan for milestone 2: ingestion.
 - **Caveats:**
   - Changing `dimensions` also changes the column type (`vector(768)`), so the table has to be dropped and recreated. I'll document that rather than automate it.
   - Changes to the parser or splitter *code* aren't captured by the fingerprint. For those, clear the table, which I'll also document.
+- **Chunk content and metadata:**
+  - Each chunk's text is prefixed with `"<page title> > <section heading>"`, which is what gets embedded and what the LLM sees later.
+  - Metadata: `source` (page url), `pageTitle`, `section`, `url` (deep link), `fingerprint`, plus Spring AI's `chunk_index`.
+- **`spring.ai.openai.embedding.metadata-mode: none`:** the default (`embed`) makes Spring AI prepend *every* metadata entry as `key: value` lines to the text it embeds. That would put URLs and hashes into the vectors. Our explicit prefix carries the useful context instead.
 - **Hash lookup:** a single `JdbcTemplate` query on `metadata->>'source'` / `metadata->>'fingerprint'`. `VectorStore` has no "find by metadata" without a similarity search.
 - **Batching:** `PgVectorStore` embeds in batches via Spring AI's `BatchingStrategy`. I'll check Gemini's per-request input limit.
 - **How you test it:**

@@ -27,3 +27,9 @@ spring:
         model: ${GEMINI_EMBEDDING_MODEL:gemini-embedding-2}
         # Gemini defaults to 3072; 768 keeps us under pgvector HNSW's 2000-dimension limit.
         dimensions: 768
+
+app:
+  ingestion:
+    # Characters per chunk and characters shared with the previous chunk (must be < chunk-size / 2).
+    chunk-size: 1200
+    chunk-overlap: 200
