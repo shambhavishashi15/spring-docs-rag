@@ -7,12 +7,19 @@ import static org.mockito.BDDMockito.then;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
+import com.openai.core.JsonValue;
 import com.openai.core.http.Headers;
 import com.openai.errors.RateLimitException;
+import com.openai.models.ErrorObject;
 import io.github.shambhavishashi15.springdocsrag.embedding.EmbeddingQuotaExceededException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,6 +29,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 // Web layer only: the controller, validation and GlobalExceptionHandler, with AskService mocked.
 @WebMvcTest(AskController.class)
+@ExtendWith(OutputCaptureExtension.class)
 class AskControllerTest {
 
 	@Autowired
@@ -96,7 +104,31 @@ class AskControllerTest {
 
 		assertThat(ask("{\"question\": \"What is a bean?\"}"))
 				.hasStatus(HttpStatus.TOO_MANY_REQUESTS)
-				.bodyJson().extractingPath("$.title").isEqualTo("Gemini rate limit exceeded");
+				.doesNotContainHeader("Retry-After")
+				.bodyJson().isLenientlyEqualTo("""
+						{"status": 429, "title": "Gemini rate limit exceeded",
+						 "detail": "Gemini's rate limit was exceeded. Try again in a minute."}""");
+	}
+
+	@Test
+	void logsGeminisQuotaDetailsAndPassesItsDelayAsRetryAfter(CapturedOutput output) {
+		// Gemini's QuotaFailure and RetryInfo arrive as extra fields of the error object, as the probe showed.
+		ErrorObject error = ErrorObject.builder()
+				.code("429").message("You exceeded your current quota.").param(Optional.empty()).type("RESOURCE_EXHAUSTED")
+				.putAdditionalProperty("details", JsonValue.from(List.of(
+						Map.of("@type", "type.googleapis.com/google.rpc.QuotaFailure",
+								"violations", List.of(Map.of("quotaId", "GenerateRequestsPerDayPerProjectPerModel-FreeTier"))),
+						Map.of("@type", "type.googleapis.com/google.rpc.RetryInfo", "retryDelay", "40.5s"))))
+				.build();
+		given(askService.ask(anyString()))
+				.willThrow(RateLimitException.builder().headers(Headers.builder().build()).error(error).build());
+
+		assertThat(ask("{\"question\": \"What is a bean?\"}"))
+				.hasStatus(HttpStatus.TOO_MANY_REQUESTS)
+				.hasHeader("Retry-After", "41")
+				.bodyJson().extractingPath("$.detail").isEqualTo("Gemini's rate limit was exceeded. Retry after 41 seconds.");
+		assertThat(output).contains(
+				"Gemini chat rate limit: quotaId=GenerateRequestsPerDayPerProjectPerModel-FreeTier, retryDelay=PT40.5S");
 	}
 
 	@Test

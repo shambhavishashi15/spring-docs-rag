@@ -2,10 +2,9 @@ package io.github.shambhavishashi15.springdocsrag.embedding;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.time.format.DateTimeParseException;
-import java.util.Locale;
 import java.util.Optional;
 
+import io.github.shambhavishashi15.springdocsrag.gemini.GeminiErrorDetails;
 import okhttp3.Interceptor;
 import okhttp3.Response;
 import tools.jackson.core.JacksonException;
@@ -18,8 +17,6 @@ import tools.jackson.databind.json.JsonMapper;
 // Must be a network interceptor: those run inside the SDK's RetryInterceptor, once per attempt.
 // It throws an unchecked exception because the SDK retries IOExceptions.
 class RetryDelayLimitInterceptor implements Interceptor {
-
-	private static final String RETRY_INFO_TYPE = "type.googleapis.com/google.rpc.RetryInfo";
 
 	// Gemini's error bodies are a few KB; this only bounds what we buffer.
 	private static final long MAX_ERROR_BODY_BYTES = 64 * 1024;
@@ -56,25 +53,10 @@ class RetryDelayLimitInterceptor implements Interceptor {
 		catch (JacksonException ex) {
 			return;
 		}
-		Optional<Duration> retryDelay = retryDelay(error);
+		Optional<Duration> retryDelay = GeminiErrorDetails.from(error).retryDelay();
 		if (retryDelay.isPresent() && retryDelay.get().compareTo(maxDelay) > 0) {
 			throw new EmbeddingQuotaExceededException(retryDelay.get(), error.path("message").asString("").strip());
 		}
-	}
-
-	// RetryInfo.retryDelay is a protobuf Duration in JSON form: seconds with an "s" suffix, e.g. "28940s" or "40.5s".
-	private static Optional<Duration> retryDelay(JsonNode error) {
-		for (JsonNode detail : error.path("details")) {
-			if (RETRY_INFO_TYPE.equals(detail.path("@type").asString(""))) {
-				try {
-					return Optional.of(Duration.parse("PT" + detail.path("retryDelay").asString("").toUpperCase(Locale.ROOT)));
-				}
-				catch (DateTimeParseException ex) {
-					return Optional.empty();
-				}
-			}
-		}
-		return Optional.empty();
 	}
 
 }
