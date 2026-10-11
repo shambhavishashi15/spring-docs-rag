@@ -119,7 +119,7 @@ The full reasoning for each milestone is in [`plans/`](plans).
 ./mvnw verify
 ```
 
-Runs unit tests (HTML parser, splitter, batching, retry interceptor, `AskService`, controller and error handling) and integration tests that start the whole app against pgvector in Testcontainers (needs Docker). The Gemini models are always mocked, so no API key or quota is needed. A local fake server also verifies the real Google SDK client: a long `RetryInfo` stops after one request, a short one keeps retrying.
+Runs unit tests (HTML parser, splitter, batching, retry interceptor, Gemini error details, `AskService`, controller and error handling, eval runner resume) and integration tests that start the whole app against pgvector in Testcontainers (needs Docker). The Gemini models are always mocked, so no API key or quota is needed. A local fake server also verifies the real Google SDK client: a long `RetryInfo` stops after one request, a short one keeps retrying.
 
 ## Evaluation
 
@@ -129,7 +129,7 @@ Runs unit tests (HTML parser, splitter, batching, retry interceptor, `AskService
 ./mvnw test -Dtest=EvalRunner -Deval.baseUrl=http://localhost:8080
 ```
 
-It calls `/api/v1/ask` for each question (pausing between them for the free tier), writes `eval/report.md` and prints the scores. A question passes when the answer contains all key facts, cites the expected page, and is answered or refused as expected.
+It calls `/api/v1/ask` for each question (pausing between them for the free tier, `-Deval.delay=6` for 6 seconds), writes `eval/report.md` and prints the scores. Each result is saved to `eval/results.json` as soon as it arrives, so a run stopped by a quota resumes where it left off; add `-Deval.fresh=true` to start over (always after changing the prompt or retrieval settings). A question passes when the answer contains all key facts, cites the expected page, and is answered or refused as expected.
 
 | Metric | Score |
 |---|---|

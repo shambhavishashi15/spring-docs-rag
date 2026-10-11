@@ -64,3 +64,7 @@ build/
 
 # Spring docs HTML: fetched by scripts/fetch-docs.sh, not redistributed (see docs/manifest.csv)
 docs/*.html
+
+# Eval working state: saved after every question so a re-run can resume (eval/report.md is committed)
+eval/results.json
+eval/*.tmp

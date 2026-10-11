@@ -46,15 +46,16 @@ curl -s localhost:8080/api/v1/ask -H 'Content-Type: application/json' -d '{"ques
 ## 4. Run the eval
 
 ```bash
-./mvnw test -Dtest=EvalRunner -Deval.baseUrl=http://localhost:8080
+./mvnw test -Dtest=EvalRunner -Deval.baseUrl=http://localhost:8080 -Deval.fresh=true -Deval.delay=6
 ```
 
-- **Duration:** about 2 minutes (a 5s pause between questions). If Gemini's chat rate limit bites, raise the pause with `-Deval.delay=10`.
+- **Duration:** about 2 minutes (a 6s pause keeps 20 questions under `gemini-3.5-flash-lite`'s 15 requests per minute).
+- **If it stops on a 429:** the app log names the quota (`Gemini chat rate limit: quotaId=…`). Every finished question is already saved in `eval/results.json`, so re-run **without** `-Deval.fresh=true` to resume.
 - **Review `eval/report.md`:** for each failed question, decide whether the cause is retrieval (expected page not cited), generation (key fact missing), or grounding (wrong refusal).
 
 ## 5. Tune only if the report shows a clear problem
 
-- **Changes that don't re-ingest:** `app.ask.top-k`, `app.ask.similarity-threshold` and the prompt only affect `/ask`, so re-run the eval after each change.
+- **Changes that don't re-ingest:** `app.ask.top-k`, `app.ask.similarity-threshold` and the prompt only affect `/ask`, so re-run the eval after each change, **with `-Deval.fresh=true`** (otherwise it resumes and keeps the old answers).
 - **Changes that re-ingest everything:** `chunk-size` and `chunk-overlap` are part of the fingerprint, so changing them re-ingests all pages and costs ~448 embedding requests.
 - **Record each change** and its effect in a short "Step 5: tuning" section of `plans/milestone-4.md`.
 
