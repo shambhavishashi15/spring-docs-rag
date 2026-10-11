@@ -27,7 +27,7 @@ public class AskService {
 			You answer questions about Spring using only the numbered sources in the user message.
 			Rules:
 			- Use only facts stated in the sources. Never add outside knowledge, even if you know the answer.
-			- After each claim, cite the sources it comes from by number in square brackets, like [1] or [1][3].
+			- Every sentence that states a fact must end with the number of its source in square brackets, like [1] or [1][3]. This applies to one-sentence answers too. An answer without [n] markers is invalid.
 			- If the sources do not contain the answer, reply with exactly this sentence and nothing else: %s
 			- Be concise. Put code in Markdown code blocks.
 			""".formatted(NOT_IN_DOCS);
