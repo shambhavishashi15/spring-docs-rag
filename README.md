@@ -4,7 +4,7 @@
 
 A Retrieval-Augmented Generation (RAG) service that answers questions about Spring using 15 Spring Boot and Spring Framework documentation pages. Answers are grounded only in retrieved chunks and cite their sources (page + section); when the docs don't contain the answer, the service says so instead of guessing. Built with Java 21, Spring Boot 4, Spring AI 2, pgvector and Google Gemini.
 
-**Status:** milestone 4 (quality and delivery) — code complete; the eval score is pending its first live run.
+**Status:** milestone 4 complete.
 
 ## Architecture
 
@@ -133,10 +133,12 @@ It calls `/api/v1/ask` for each question (pausing between them for the free tier
 
 | Metric | Score |
 |---|---|
-| Questions passed | _pending first run_ |
-| Key facts found (answerable questions) | _pending first run_ |
-| Expected page cited (answerable questions) | _pending first run_ |
-| Correct refusal behaviour | _pending first run_ |
+| Questions passed | 20/20 |
+| Key facts found (answerable questions) | 31/31 |
+| Expected page cited (answerable questions) | 18/18 |
+| Correct refusal behaviour | 20/20 |
+
+Measured with `gemini-3.5-flash-lite` on 2026-10-11; full per-question results in [`eval/report.md`](eval/report.md).
 
 ## Docker
 
