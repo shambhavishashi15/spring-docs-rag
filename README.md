@@ -23,7 +23,7 @@ flowchart LR
         Q["question"] --> QE["Gemini embedding<br/>of the question"]
         QE --> R["similarity search<br/>top 6 chunks"]
         R --> G["group by section<br/>numbered sources [1]..[n]"]
-        G --> C["Gemini chat<br/>answer only from sources, cite [n]"]
+        G --> C["Gemini chat<br/>gemini-3.5-flash-lite<br/>answer only from sources, cite [n]"]
         C --> A["answer + citations<br/>(page, section, deep link)"]
     end
     E --> V[("Postgres + pgvector<br/>vector_store")]
@@ -98,6 +98,7 @@ The full reasoning for each milestone is in [`plans/`](plans).
 |---|---|---|
 | Spring Boot 4.1 + Spring AI 2.0 | The latest stable Spring AI release only supports Boot 4. | Newer APIs (Jackson 3, Spring Framework 7) with fewer examples online. |
 | Chat through Gemini's OpenAI-compatible endpoint, embeddings through Spring AI's Google GenAI starter | Spring AI 2's OpenAI SDK rejects Gemini's OpenAI-compatible embedding responses (the first item has no `index`). Both use the same API key. | Two client libraries instead of one; `spring.ai.model.embedding: none` keeps exactly one `EmbeddingModel` bean. |
+| Chat model `gemini-3.5-flash-lite` | Its free tier allows 500 requests per day and 15 per minute; `gemini-3.8-flash` allows only 20 per day and 5 per minute, fewer than one 20-question eval run. Answers only need to restate retrieved text, which a Lite model handles. | A smaller model than 3.8 Flash; `GEMINI_CHAT_MODEL` switches models without a code change. |
 | 768-dimension embeddings | pgvector's HNSW index supports at most 2,000 dimensions; 768 is one of Gemini's recommended sizes. | Slightly less precise than the default 3,072. |
 | Chunks never cross an h2/h3 section, split by our own `OverlappingTextSplitter` | Citations need page + section; Spring AI's `TokenTextSplitter` has no overlap. Breaks at paragraph, line, sentence, then word. | Characters, not tokens: easy to explain and well under the embedding input limit, but chunk token counts vary. |
 | Idempotency through a per-page fingerprint | Unchanged pages cost no API calls; a changed page is replaced in one transaction, so a failed embedding call leaves the old chunks in place. | Splitter code changes aren't captured by the fingerprint (clear the table instead). Deterministic chunk IDs with upsert would re-embed everything each run and leave stale tail chunks. |
@@ -152,7 +153,7 @@ The image is built in two stages (JDK to build, JRE to run), uses Spring Boot's 
 
 ## Configuration
 
-Everything is in `src/main/resources/application.yml` and can be overridden with environment variables: `GEMINI_API_KEY` (required), `GEMINI_CHAT_MODEL`, `GEMINI_EMBEDDING_MODEL`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `DOCS_DIR`, and any other property through Spring Boot's relaxed binding (e.g. `APP_ASK_TOPK` for `app.ask.top-k`).
+Everything is in `src/main/resources/application.yml` and can be overridden with environment variables: `GEMINI_API_KEY` (required), `GEMINI_CHAT_MODEL` (default `gemini-3.5-flash-lite`), `GEMINI_EMBEDDING_MODEL` (default `gemini-embedding-2`), `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `DOCS_DIR`, and any other property through Spring Boot's relaxed binding (e.g. `APP_ASK_TOPK` for `app.ask.top-k`).
 
 ## Spring documentation
 

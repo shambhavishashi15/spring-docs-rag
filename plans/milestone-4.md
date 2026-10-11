@@ -48,6 +48,11 @@ Here's the plan for milestone 4: quality and delivery.
 ## Step 4: README
 - Architecture section with a Mermaid diagram, design decisions with trade-offs, eval section with a score placeholder, Docker and CI instructions.
 
+## Step 5: Chat model switch
+- **Problem:** the first live eval stopped at question 14 with a chat 429. `gemini-3.8-flash` allows only 20 requests per day and 5 per minute on the free tier, which is less than one 20-question eval run.
+- **Change:** the default chat model (`spring.ai.openai.chat.model`) is now `gemini-3.5-flash-lite`: 500 requests per day and 15 per minute. It's the exact, non-preview name from the key's model list (not the moving `gemini-flash-lite-latest` alias).
+- **Trade-off:** a smaller model. The task is restating retrieved text with `[n]` markers, and the eval measures whether it still does that well. `GEMINI_CHAT_MODEL` switches back without a code change.
+
 ## How you test it
 - `./mvnw verify`: all tests pass, with no Gemini calls.
 - `docker build -t spring-docs-rag .` and the `docker run` command from the README.
